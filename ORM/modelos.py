@@ -78,7 +78,7 @@ class Arriendo(Base):
     fecha_inicio: Mapped[date] = mapped_column(Date, nullable=False)
     fecha_fin_prevista: Mapped[date] = mapped_column(Date, nullable=False)
     cantidad: Mapped[int] = mapped_column(Integer, nullable=False)
-    estado: Mapped[str] = mapped_column(String(10), default="activo", nullable=False)
+    estado: Mapped[str] = mapped_column(String(10), default="ACTIVO", nullable=False)
     equipo: Mapped[Equipo] = relationship(back_populates="arriendos")
     cliente: Mapped[Cliente] = relationship(back_populates="arriendos")
 

@@ -2,6 +2,7 @@ from sqlalchemy.exc import IntegrityError
 from ORM.conexion import Session
 from ORM.modelos import Categoria, Equipo, Cliente
 from ORM import validaciones
+from ORM.factory_method import obtener_creador
 
 
 def registrar_categoria(nombre, descripcion=''):
@@ -28,13 +29,13 @@ def registrar_equipo(nombre, categoria_id, precio_diario, stock_total):
         categoria = session.get(Categoria, categoria_id)
         if categoria is None:
             raise ValueError('La categoría no existe.')
+        creador = obtener_creador(categoria.nombre)
 
-        equipo = Equipo(
+        equipo = creador.crear_equipo(
             nombre=nombre,
             categoria_id=categoria_id,
             precio_diario=precio_diario,
             stock_total=stock_total,
-            stock_disponible=stock_total,
         )
         session.add(equipo)
 

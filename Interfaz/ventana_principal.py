@@ -1,10 +1,10 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
 from datetime import date
-
 from ORM import insertar, consultar, actualizar, eliminar
 from ORM.conexion import engine
 from ORM.modelos import Base
+from Interfaz.Formulario.estadistica import FormularioEstadisticas
 
 try:
     from ORM import services as servicio_arriendos_mod
@@ -59,6 +59,8 @@ class AplicacionArriendos(tk.Tk):
         self._form_categorias()
         self._form_clientes()
         self._form_consultas()
+        self.form_estadisticas = FormularioEstadisticas(nb)
+        nb.add(self.form_estadisticas, text="Gráficas")
 
     
     def _form_arriendos(self):
@@ -88,7 +90,30 @@ class AplicacionArriendos(tk.Tk):
         self._botones_crud(f, 1, 4, self._crear_eq, self._act_eq, self._elim_eq)
 
         self.tree_eq = self._crear_tabla(self.tab_eq, ["ID", "Nombre", "Categoría", "Precio", "Total", "Disp."])
-        self.tree_eq.bind("<<TreeviewSelect>>", lambda _: self._llenar_entradas(self.tree_eq, [(self.e_eq_nom, 1), (self.e_eq_pre, 3), (self.e_eq_stk, 4)]))
+        self.tree_eq.bind("<<TreeviewSelect>>", self._select_equipo,)
+
+    def _select_equipo(self, evento=None):
+        seleccion = self.tree_eq.selection()
+
+        if not seleccion:
+            return
+
+        self._llenar_entradas(
+            self.tree_eq,
+            [
+                (self.e_eq_nom, 1),
+                (self.e_eq_pre, 3),
+                (self.e_eq_stk, 4),
+            ],
+        )
+
+        valores = self.tree_eq.item(seleccion[0], "values")
+        equipo = consultar.buscar_equipo(int(valores[0]))
+
+        if equipo is not None:
+            self.cb_eq_cat.set(
+                f"{equipo.categoria_id} - {equipo.categoria.nombre}"
+            )
 
     
     def _form_categorias(self):
@@ -147,10 +172,12 @@ class AplicacionArriendos(tk.Tk):
                 self.tree_arr,
                 [(a.id, a.cliente.nombre if a.cliente else a.cliente_id, a.equipo.nombre if a.equipo else a.equipo_id, a.cantidad, a.fecha_inicio, a.fecha_fin_prevista, a.estado) for a in arrs],
             )
+            
         except Exception:
             pass
 
         self._cargar_consulta("disp")
+        self.form_estadisticas.actualizar()
 
     def _ejecutar(self, accion, ok_msg="Operación exitosa."):
         try:
@@ -255,7 +282,7 @@ class AplicacionArriendos(tk.Tk):
     def _ver_grafico(self, metodo, idx_estadistica):
         fn = getattr(self.graficos, metodo, None)
         if callable(fn):
-            fn()
+            fn(self)
         else:
             datos = consultar.consultar_estadisticas()[idx_estadistica]
             messagebox.showinfo("Estadísticas", "\n".join(f"{nom}: {cant}" for _, nom, cant in datos) or "Sin datos.")
